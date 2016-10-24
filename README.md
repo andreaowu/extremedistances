@@ -1,6 +1,6 @@
 #Distance Calculator
 
-Created using Golang.
+Written in Go.
 
 Functionality:
 Given a location with latitude and longitude both in degrees and a CSV file with record ID, latitude in degrees, and longitude in degrees, output two CSV files. Both files will contain 5 records, each with the record ID, latitude and longitude of the original point in degrees, as well as the distance in kilometers from the given location. One file will be of the top 5 closest points to the given location and the other will be the top 5 furthest points from the given location
