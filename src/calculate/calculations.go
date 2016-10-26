@@ -1,47 +1,9 @@
 package main
 
 import (
-    "bufio"
-    "encoding/csv"
-    "io"
-    "log"
     "math"
-    "os"
     "strconv"
 )
-
-type Point struct {
-    lat float64 // latitude
-    lng float64 // longitude
-    id int64    // given id in the file
-    dist float64 // distance from office
-}
-
-const (
-    // According to Wikipedia, the Earth's radius is about 6371km
-    EARTH_RADIUS = 6371
-)
-
-// ToRadians takes a degrees and returns a in in radians.
-func ToRadians(a float64) float64 {
-    return a * math.Pi / 180
-}
-
-// Distance takes two points, a and b, and returns the great circle distance
-// the two points.
-func Distance(a Point, b Point) float64 {
-    latDiff := ToRadians(b.lat - a.lat)
-    lngDiff := ToRadians(b.lng - a.lng)
-    aLatRad := ToRadians(a.lat)
-    bLatRad := ToRadians(b.lat)
-
-    x := math.Sin(latDiff / 2) * math.Sin(latDiff / 2) 
-    y := math.Sin(lngDiff / 2) * math.Sin(lngDiff / 2) * math.Cos(aLatRad) * math.Cos(bLatRad)
-    z := x + y
-    c := 2 * math.Atan2(math.Sqrt(z), math.Sqrt(1 - z))
-
-    return EARTH_RADIUS * c
-}
 
 // IsZero returns whether p is a real data point
 func IsZero(p Point) bool {
@@ -131,71 +93,34 @@ func Reverse(arr [5]Point) [5]Point {
     return arr
 }
 
-// PrintToFile prints arr into a file named fileName.
-func PrintToFile(fileName string, arr [5]Point) {
-    file, err := os.Create(fileName)
-    Check(err)
-    defer file.Close()
-   
-    writerClose := csv.NewWriter(file)
-    // Add column names as first line to file
-    tags := []string{"id", "lat", "lng", "distance in km from office"}
-    err = writerClose.Write(tags)
-
-    // Change all numbers into strings and write to file
-    for i := 0; i < len(arr); i++ {
-        if !IsZero(arr[i]) {
-            record := []string{strconv.FormatInt(arr[i].id, 10),
-                      strconv.FormatFloat(arr[i].lat, 'f', -1, 64),
-                      strconv.FormatFloat(arr[i].lng, 'f', -1, 64), 
-                      strconv.FormatFloat(arr[i].dist, 'f', -1, 64),}
-            err = writerClose.Write(record)
-        }
-    }
-
-    defer writerClose.Flush()
-}
-
 // Main function of the program reads the file, processes the data, and 
 // outputs appropriately.
-func main() {
-    // Open and read given CSV file
-    fileNameWithData := os.Args[1]
-    file, err := os.Open(fileNameWithData)
-    Check(err)
-    defer file.Close()
-    r := csv.NewReader(bufio.NewReader(file))
+func Calculate(data [][]string, office Point) ([5]Point, [5]Point) {
 
     var closest [5]Point // array to track closest data points to office
     close := math.MaxFloat64 // furthest point in top 5 closest data points
     var furthest [5]Point // array to track furthest data points to office
     far := float64(-1) // closest point in top 5 furthest data points
-    office := Point{51.9204549, 4.5099984, -1, 0}
     count := 0
-    for {
-        record, err := r.Read()
-        if err == io.EOF {
-            break
-        }
-        if err != nil {
-            log.Fatal(err)
-        }
-        if count < 1 {
-            // skip the first line of the record, which says 'id', 'lat', 'lng'
-            count += 1
-            continue
-        }
+
+    for _, record := range data {
+        // Get each field in the record
         lat, err := strconv.ParseFloat(record[1], 64)
+        Check(err)
         lng, err := strconv.ParseFloat(record[2], 64)
+        Check(err)
         id, err := strconv.ParseInt(record[0], 10, 0)
+        Check(err)
         place := Point{lat, lng, id, 0}
         dist := Distance(place, office)
         place.dist = dist
+
         if !CheckFill(closest) || dist < close {
             // add it to closest, but add it in the right spot
             closest = AddToArray(closest, place)
             close = Distance(closest[4], office)
         }
+
         if  !CheckFill(furthest) || dist > far {
             // add it to furthest, but delete first element
             furthest[0] = Point{0, 0, 0, 0}
@@ -205,6 +130,5 @@ func main() {
         count += 1
     }
 
-    PrintToFile("closest.csv", closest)
-    PrintToFile("furthest.csv", Reverse(furthest))
+    return closest, Reverse(furthest)
 }
