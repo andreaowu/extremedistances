@@ -44,7 +44,7 @@ func OpenFile(fileName string) [][] string {
 }
 
 // PrintToFile prints arr into a file named fileName.
-func PrintToFile(fileName string, arr [5]Point) {
+func PrintToFile(fileName string, arr []Point) {
     file, err := os.Create(fileName)
     Check(err)
     defer file.Close()
