@@ -109,6 +109,8 @@ func Reverse(arr []Point) []Point {
     return arr
 }
 
+// CalculateFurthest does all the calculations for getting the
+// furthest data points.
 func CalculateFurthest(data [][]string, office Point, top int) []Point {
 
     var furthest []Point
@@ -131,7 +133,7 @@ func CalculateFurthest(data [][]string, office Point, top int) []Point {
     return Reverse(furthest)
 }
 
-// CalculateClosest function does all the calculations for getting the
+// CalculateClosest does all the calculations for getting the
 // closest data points.
 func CalculateClosest(data [][]string, office Point, top int) []Point {
 
