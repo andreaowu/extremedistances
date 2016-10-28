@@ -5,6 +5,22 @@ import (
     "strconv"
 )
 
+func InitializeVars(record []string, office Point) (Point, float64) {
+    // Get each field in the record
+    lat, err := strconv.ParseFloat(record[1], 64)
+    Check(err)
+    lng, err := strconv.ParseFloat(record[2], 64)
+    Check(err)
+    id, err := strconv.ParseInt(record[0], 10, 0)
+    Check(err)
+    place := Point{lat, lng, id, 0}
+    dist := Distance(place, office)
+    place.dist = dist
+
+    return place, dist
+}
+
+
 // IsZero returns whether p is a real data point
 func IsZero(p Point) bool {
     if p.id == 0 && p.lat == 0 && p.lng == 0 && p.dist == 0 {
@@ -15,7 +31,7 @@ func IsZero(p Point) bool {
 
 // CheckFill checks whether arr has all data or whether some fields have
 // not been written in yet.
-func CheckFill(arr [5]Point) bool {
+func CheckFill(arr []Point) bool {
     first := arr[0]
     if IsZero(first) {
         return false
@@ -25,7 +41,7 @@ func CheckFill(arr [5]Point) bool {
 
 
 // MoveDown shifts all arr values to the left and puts val at ind in arr.
-func MoveDown(val Point, arr [5]Point, ind int) [5]Point {
+func MoveDown(val Point, arr []Point, ind int) []Point {
     for i := 0; i < ind; i++ {
         arr[i] = arr[i + 1]
     }
@@ -35,7 +51,7 @@ func MoveDown(val Point, arr [5]Point, ind int) [5]Point {
 
 // MoveUp shifts values to the right and inserts val such that arr's order 
 // is maintained.
-func MoveUp(arr [5]Point, val Point) [5]Point {
+func MoveUp(arr []Point, val Point) []Point {
     for i := 0; i < len(arr); i++ {
         if IsZero(arr[i]) {
             // Reached end of array so need to insert value
@@ -59,7 +75,7 @@ func MoveUp(arr [5]Point, val Point) [5]Point {
 }
 
 // AddToArray adds val to arr. 
-func AddToArray(arr [5]Point, val Point) [5]Point {
+func AddToArray(arr []Point, val Point) []Point {
     if !CheckFill(arr) {
         arr = MoveUp(arr, val)
         return arr
@@ -86,40 +102,22 @@ func Check(e error) {
 }
 
 // Reverse returns the reverse of arr.
-func Reverse(arr [5]Point) [5]Point {
+func Reverse(arr []Point) []Point {
     for i, j := 0, len(arr) - 1; i < j; i, j = i + 1, j - 1 {
         arr[i], arr[j] = arr[j], arr[i]
     }
     return arr
 }
 
-// Main function of the program reads the file, processes the data, and 
-// outputs appropriately.
-func Calculate(data [][]string, office Point) ([5]Point, [5]Point) {
+func CalculateFurthest(data [][]string, office Point, top int) []Point {
 
-    var closest [5]Point // array to track closest data points to office
-    close := math.MaxFloat64 // furthest point in top 5 closest data points
-    var furthest [5]Point // array to track furthest data points to office
-    far := float64(-1) // closest point in top 5 furthest data points
+    var furthest []Point
+    furthest = make([]Point, top) // array to track furthest data points to office
+    far := float64(-1) // closest point in top furthest data points
     count := 0
 
     for _, record := range data {
-        // Get each field in the record
-        lat, err := strconv.ParseFloat(record[1], 64)
-        Check(err)
-        lng, err := strconv.ParseFloat(record[2], 64)
-        Check(err)
-        id, err := strconv.ParseInt(record[0], 10, 0)
-        Check(err)
-        place := Point{lat, lng, id, 0}
-        dist := Distance(place, office)
-        place.dist = dist
-
-        if !CheckFill(closest) || dist < close {
-            // add it to closest, but add it in the right spot
-            closest = AddToArray(closest, place)
-            close = Distance(closest[4], office)
-        }
+        place, dist := InitializeVars(record, office)
 
         if  !CheckFill(furthest) || dist > far {
             // add it to furthest, but delete first element
@@ -130,5 +128,28 @@ func Calculate(data [][]string, office Point) ([5]Point, [5]Point) {
         count += 1
     }
 
-    return closest, Reverse(furthest)
+    return Reverse(furthest)
+}
+
+// CalculateClosest function does all the calculations for getting the
+// closest data points.
+func CalculateClosest(data [][]string, office Point, top int) []Point {
+
+    var closest []Point 
+    closest = make([]Point, top) // array to track closest data points to office
+    close := math.MaxFloat64 // furthest point in top closest data points
+    count := 0
+
+    for _, record := range data {
+        place, dist := InitializeVars(record, office)
+
+        if !CheckFill(closest) || dist < close {
+            // add it to closest, but add it in the right spot
+            closest = AddToArray(closest, place)
+            close = Distance(closest[top - 1], office)
+        }
+        count += 1
+    }
+
+    return closest
 }
